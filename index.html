@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Trade API Viewer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      background: #0d0d0d;
+      color: #00ff00;
+      font-family: monospace;
+      margin: 0;
+      padding: 1rem;
+    }
+    h1 {
+      font-size: 1.2rem;
+      margin-bottom: 0.5rem;
+    }
+    a {
+      color: #00ffff;
+      word-break: break-all;
+    }
+    .buttons {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    button {
+      flex: 1;
+      background: black;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+      padding: 0.5rem;
+      font-family: monospace;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #003300;
+    }
+    pre {
+      background: #000;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+      padding: 1rem;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      max-height: 70vh;
+    }
+  </style>
+</head>
+<body>
+  <h1>Trade API Viewer</h1>
+  <p>Deployed at: <a href="https://vercel-api-rest-sage.vercel.app/api/trade" target="_blank">
+    https://vercel-api-rest-sage.vercel.app/api/trade</a></p>
+
+  <div class="buttons">
+    <button onclick="readTrades()">Fetch Trades</button>
+    <button onclick="clearTrades()">Clear Logs</button>
+  </div>
+
+  <pre id="output">Press "Fetch Trades" to load data...</pre>
+
+  <script>
+    const API_URL = "https://vercel-api-rest-sage.vercel.app/api/trade";
+
+    async function readTrades() {
+      try {
+        const res = await fetch(API_URL);
+        const json = await res.json();
+        document.getElementById("output").textContent = JSON.stringify(json, null, 2);
+      } catch (err) {
+        document.getElementById("output").textContent = "Error: " + err.message;
+      }
+    }
+
+    async function clearTrades() {
+      try {
+        const res = await fetch(API_URL, { method: "DELETE" });
+        const json = await res.json();
+        document.getElementById("output").textContent = JSON.stringify(json, null, 2);
+      } catch (err) {
+        document.getElementById("output").textContent = "Error: " + err.message;
+      }
+    }
+  </script>
+</body>
+</html>
