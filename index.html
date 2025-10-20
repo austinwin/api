@@ -66,11 +66,29 @@
   <script>
     const API_URL = "https://vercel-api-rest-sage.vercel.app/api/trade";
 
+    function toLocalTime(utcString) {
+      const date = new Date(utcString);
+      return date.toLocaleString(); // converts to local TZ automatically
+    }
+
+    function formatTrades(json) {
+      if (!json.trades || json.trades.length === 0) {
+        return "No trades logged.";
+      }
+      return json.trades.map((t, idx) => {
+        let header = `[${idx + 1}] ${toLocalTime(t.datetime)} | ${t.signal.toUpperCase()} ${t.quantity} ${t.coin}`;
+        let risk = `Risk=$${t.risk_usd} | Lev=${t.leverage}x | Conf=${Math.round(t.confidence * 100)}%`;
+        let pos = `[Position] ${t.current_position.status}, entry=${t.current_position.entry_price}, dir=${t.current_position.direction ?? "-"}`;
+        let target = `TP=${t.profit_target ?? "-"} | SL=${t.stop_loss ?? "-"} | Invalid=${t.invalidation_condition ?? "-"}`;
+        return `${header}\n  ${risk}\n  ${pos}\n  ${target}`;
+      }).join("\n\n----------------------------\n\n");
+    }
+
     async function readTrades() {
       try {
         const res = await fetch(API_URL);
         const json = await res.json();
-        document.getElementById("output").textContent = JSON.stringify(json, null, 2);
+        document.getElementById("output").textContent = formatTrades(json);
       } catch (err) {
         document.getElementById("output").textContent = "Error: " + err.message;
       }
@@ -79,8 +97,8 @@
     async function clearTrades() {
       try {
         const res = await fetch(API_URL, { method: "DELETE" });
-        const json = await res.json();
-        document.getElementById("output").textContent = JSON.stringify(json, null, 2);
+        await res.json();
+        document.getElementById("output").textContent = "Logs cleared.";
       } catch (err) {
         document.getElementById("output").textContent = "Error: " + err.message;
       }
