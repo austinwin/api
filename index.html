@@ -68,20 +68,24 @@
 
     function toLocalTime(utcString) {
       const date = new Date(utcString);
-      return date.toLocaleString(); // converts to local TZ automatically
+      return date.toLocaleString(); // local TZ
     }
 
     function formatTrades(json) {
       if (!json.trades || json.trades.length === 0) {
         return "No trades logged.";
       }
-      return json.trades.map((t, idx) => {
+
+      // sort newest → oldest
+      const sorted = [...json.trades].sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+
+      return sorted.map((t, idx) => {
         let header = `[${idx + 1}] ${toLocalTime(t.datetime)} | ${t.signal.toUpperCase()} ${t.quantity} ${t.coin}`;
-        let risk = `Risk=$${t.risk_usd} | Lev=${t.leverage}x | Conf=${Math.round(t.confidence * 100)}%`;
-        let pos = `[Position] ${t.current_position.status}, entry=${t.current_position.entry_price}, dir=${t.current_position.direction ?? "-"}`;
-        let target = `TP=${t.profit_target ?? "-"} | SL=${t.stop_loss ?? "-"} | Invalid=${t.invalidation_condition ?? "-"}`;
-        return `${header}\n  ${risk}\n  ${pos}\n  ${target}`;
-      }).join("\n\n----------------------------\n\n");
+        let pos = `Pos=${t.current_position.status} ${t.current_position.direction ?? "-"} @${t.current_position.entry_price}`;
+        let risk = `Risk=$${t.risk_usd}, Lev=${t.leverage}x, Conf=${Math.round(t.confidence * 100)}%`;
+        let stops = `TP=${t.profit_target ?? "-"}, SL=${t.stop_loss ?? "-"}, Invalid=${t.invalidation_condition ?? "-"}`;
+        return `${header}\n  ${pos}\n  ${risk}\n  ${stops}`;
+      }).join("\n\n");
     }
 
     async function readTrades() {
