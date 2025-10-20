@@ -65,35 +65,18 @@
 
   <script>
     const API_URL = "https://vercel-api-rest-sage.vercel.app/api/trade";
-    const PRICE_API = "https://api.binance.com/api/v3/ticker/price?symbol=SOLUSDT";
 
     function toLocalTime(utcString) {
       const date = new Date(utcString);
-      return date.toLocaleString();
+      return date.toLocaleString(); // local TZ
     }
 
-    function calcPnL(t, currentPrice) {
-      if (!t.current_position || !t.current_position.entry_price || t.current_position.entry_price === 0) {
-        return "n/a";
-      }
-      const entry = parseFloat(t.current_position.entry_price);
-      const qty = parseFloat(t.quantity) || 0;
-      const lev = parseFloat(t.leverage) || 1;
-      const cp = parseFloat(currentPrice);
-
-      if (t.current_position.direction === "long") {
-        return ((cp - entry) * qty * lev).toFixed(2);
-      } else if (t.current_position.direction === "short") {
-        return ((entry - cp) * qty * lev).toFixed(2);
-      }
-      return "n/a";
-    }
-
-    function formatTrades(json, currentPrice) {
+    function formatTrades(json) {
       if (!json.trades || json.trades.length === 0) {
         return "No trades logged.";
       }
 
+      // sort newest → oldest
       const sorted = [...json.trades].sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
 
       return sorted.map((t, idx) => {
@@ -101,23 +84,15 @@
         let pos = `Pos=${t.current_position.status} ${t.current_position.direction ?? "-"} @${t.current_position.entry_price}`;
         let risk = `Risk=$${t.risk_usd}, Lev=${t.leverage}x, Conf=${Math.round(t.confidence * 100)}%`;
         let stops = `TP=${t.profit_target ?? "-"}, SL=${t.stop_loss ?? "-"}, Invalid=${t.invalidation_condition ?? "-"}`;
-        let pnl = `Price=${currentPrice} | Unrealized PnL=${calcPnL(t, currentPrice)}`;
-        return `${header}\n  ${pos}\n  ${risk}\n  ${stops}\n  ${pnl}`;
+        return `${header}\n  ${pos}\n  ${risk}\n  ${stops}`;
       }).join("\n\n");
     }
 
     async function readTrades() {
       try {
-        // fetch current price
-        const priceRes = await fetch(PRICE_API);
-        const priceJson = await priceRes.json();
-        const currentPrice = parseFloat(priceJson.price).toFixed(2);
-
-        // fetch trades
         const res = await fetch(API_URL);
         const json = await res.json();
-
-        document.getElementById("output").textContent = formatTrades(json, currentPrice);
+        document.getElementById("output").textContent = formatTrades(json);
       } catch (err) {
         document.getElementById("output").textContent = "Error: " + err.message;
       }
