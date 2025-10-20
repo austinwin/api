@@ -68,7 +68,24 @@
 
     function toLocalTime(utcString) {
       const date = new Date(utcString);
-      return date.toLocaleString(); // local TZ
+      return date.toLocaleString();
+    }
+
+    function calcPnL(t) {
+      if (!t.current_position || !t.current_position.entry_price || t.current_position.entry_price === 0) {
+        return "n/a";
+      }
+      const entry = parseFloat(t.current_position.entry_price);
+      const qty = parseFloat(t.quantity) || 0;
+      const lev = parseFloat(t.leverage) || 1;
+      const cp = parseFloat(t.current_price);
+
+      if (t.current_position.direction === "long") {
+        return ((cp - entry) * qty * lev).toFixed(2);
+      } else if (t.current_position.direction === "short") {
+        return ((entry - cp) * qty * lev).toFixed(2);
+      }
+      return "n/a";
     }
 
     function formatTrades(json) {
@@ -76,15 +93,15 @@
         return "No trades logged.";
       }
 
-      // sort newest → oldest
       const sorted = [...json.trades].sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
 
       return sorted.map((t, idx) => {
-        let header = `[${idx + 1}] ${toLocalTime(t.datetime)} | ${t.signal.toUpperCase()} ${t.quantity} ${t.coin}`;
-        let pos = `Pos=${t.current_position.status} ${t.current_position.direction ?? "-"} @${t.current_position.entry_price}`;
-        let risk = `Risk=$${t.risk_usd}, Lev=${t.leverage}x, Conf=${Math.round(t.confidence * 100)}%`;
-        let stops = `TP=${t.profit_target ?? "-"}, SL=${t.stop_loss ?? "-"}, Invalid=${t.invalidation_condition ?? "-"}`;
-        return `${header}\n  ${pos}\n  ${risk}\n  ${stops}`;
+        const header = `[${idx + 1}] ${toLocalTime(t.datetime)} | ${t.signal.toUpperCase()} ${t.quantity} ${t.coin}`;
+        const pos = `Pos=${t.current_position.status} ${t.current_position.direction ?? "-"} @${t.current_position.entry_price}`;
+        const risk = `Risk=$${t.risk_usd}, Lev=${t.leverage}x, Conf=${Math.round(t.confidence * 100)}%`;
+        const stops = `TP=${t.profit_target ?? "-"}, SL=${t.stop_loss ?? "-"}, Invalid=${t.invalidation_condition ?? "-"}`;
+        const pnl = `Price=${t.current_price} | Unrealized PnL=${calcPnL(t)}`;
+        return `${header}\n  ${pos}\n  ${risk}\n  ${stops}\n  ${pnl}`;
       }).join("\n\n");
     }
 
